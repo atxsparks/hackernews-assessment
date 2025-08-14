@@ -1,0 +1,125 @@
+<div class="story-list-container">
+  <header class="header">
+    <h1>Hacker News - Latest Stories</h1>
+    <div class="search-container">
+      <input 
+        type="text" 
+        class="search-input"
+        placeholder="Search stories by title or author..."
+        (input)="onSearchInput($event)"
+        [value]="searchQuery()"
+      >
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading stories...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-container">
+      <p class="error-message">{{ error() }}</p>
+      <button class="retry-button" (click)="loadStories(currentPage())">
+        Try Again
+      </button>
+    </div>
+  }
+
+  @if (!loading() && !error() && filteredStories().length > 0) {
+    <div class="stories-info">
+      @if (searchQuery()) {
+        <p>Found {{ filteredStories().length }} stories matching "{{ searchQuery() }}"</p>
+      } @else {
+        <p>Showing {{ filteredStories().length }} of {{ totalCount() }} latest stories (Page {{ currentPage() }} of {{ totalPages() }})</p>
+      }
+    </div>
+
+    <div class="stories-container">
+      @for (story of filteredStories(); track story.id) {
+        <article class="story-item">
+          <div class="story-header">
+            <h2 class="story-title">
+              @if (hasValidUrl(story)) {
+                <a [href]="getStoryUrl(story)" target="_blank" rel="noopener noreferrer">
+                  {{ story.title }}
+                  <svg class="external-link-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              } @else {
+                <a [href]="getStoryUrl(story)" target="_blank" rel="noopener noreferrer">
+                  {{ story.title }}
+                  <span class="no-url-indicator">(Discussion)</span>
+                </a>
+              }
+            </h2>
+          </div>
+          
+          <div class="story-meta">
+            <span class="story-score">{{ story.score }} points</span>
+            <span class="story-author">by {{ story.by }}</span>
+            <span class="story-time">{{ getTimeAgo(story.time) }}</span>
+            @if (story.descendants) {
+              <span class="story-comments">{{ story.descendants }} comments</span>
+            }
+            <span class="story-type">{{ story.type }}</span>
+          </div>
+        </article>
+      }
+    </div>
+
+    @if (!searchQuery()) {
+      <nav class="pagination" aria-label="Story pagination">
+        <button 
+          class="pagination-button"
+          [disabled]="currentPage() === 1"
+          (click)="previousPage()"
+          aria-label="Previous page"
+        >
+          ← Previous
+        </button>
+        
+        <div class="page-numbers">
+          @for (pageNum of getPageNumbers(); track pageNum) {
+            @if (pageNum === -1) {
+              <span class="ellipsis">...</span>
+            } @else {
+              <button 
+                class="page-number"
+                [class.active]="pageNum === currentPage()"
+                (click)="goToPage(pageNum)"
+                [attr.aria-label]="'Go to page ' + pageNum"
+              >
+                {{ pageNum }}
+              </button>
+            }
+          }
+        </div>
+        
+        <button 
+          class="pagination-button"
+          [disabled]="currentPage() === totalPages()"
+          (click)="nextPage()"
+          aria-label="Next page"
+        >
+          Next →
+        </button>
+      </nav>
+    }
+  }
+
+  @if (!loading() && !error() && filteredStories().length === 0 && searchQuery()) {
+    <div class="no-results">
+      <p>No stories found matching "{{ searchQuery() }}"</p>
+      <button class="clear-search-button" (click)="searchQuery.set(''); filterStories()">
+        Clear Search
+      </button>
+    </div>
+  }
+</div>
